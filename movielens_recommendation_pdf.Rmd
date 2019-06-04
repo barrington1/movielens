@@ -1,12 +1,53 @@
-#' MovieLens Recommendation
-#' Bobby Arrington
-#' @barringtontx
-#' June 06/04/2019
-#' 
-library(tidyr)
-library(dplyr)
-library(tidyverse)
+---
+title: "movielens_recommendation pdf"
+author: "Bobby Arrington"
+date: "June 3, 2019"
+output: pdf_document
+---
 
+**Abstract**
+
+```
+Recommendations systems use ratings that users have given items to make specific recommendations    
+to users. These ratings are usually in the range 1 to 5 stars, but there are some raters who give  
+half stars. In this study, considering that the average rating of users has a certain stability,  
+we propose a personalized fitting pattern  to predict any missing ratings based on the similarity   
+score set, which combines both the user-based and item-based. We will not use non-rating factors   
+such as user’s (movie goer) age, gender, education, occupation, movie’s release date and price.   
+However, we will use some vector adjustment to come up with least “RMSE”. We will use the   
+experimental results on the MovieLens dataset to show that our proposed algorithms can increase   
+the accuracy of our recommendation. That it can be used to predict what rating a given user will   
+give a specific item. Items for which a high rating is predicted for specific users are then   
+recommended to that user.
+
+```
+
+**Introduction**
+
+```
+This is the "Capstone Project: All Learners", In this project, we will be creating a movie   
+recommendation system using the MovieLens dataset. In project we will be using the large   
+version of the "MovieLens" dataset with 10 millions ratings of the latest movies.  We will   
+be creating a recommendation system using all the tools we have used throughout the previous   
+8 courses in this series. Additioally, we will be using the provide "Test and Validation"   
+script to create the "edx" and "validation" datasets.
+
+The output of this process will be least "RMSE" ans predicated movie ratings.
+
+```
+
+**Method/Analysis**
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, include=FALSE}
+options(tinytex.verbose = TRUE)
+```
+
+```{r, echo=FALSE}
 #data(validation)
 #Create test and validation sets
 ###################################
@@ -51,13 +92,26 @@ removed <- anti_join(temp, validation)
 edx <- rbind(edx, removed)
 
 rm(dl, ratings, movies, test_index, temp, movielens, removed)
+```
 
+```{r}
+library(tidyr)
+library(dplyr)
+library(tidyverse)
+library(tinytex)
+data(edx)
+data(validation)
+
+```
+ Building the Recommendation System
+ Creating the beginning RMSE
+ 
+```
+```{r}
 
 RMSE <- function(true_ratings, predicted_ratings){
   sqrt(mean((true_ratings - predicted_ratings)^2))
 }
-
-### Building the Recommendation System
 
 mu_hat <- mean(edx$rating)
 mu_hat
@@ -69,68 +123,151 @@ predictions <- rep(2.5, nrow(validation))
 RMSE(validation$rating, predictions)
 
 rmse_results <- data_frame(method = "Just the average", RMSE = naive_rmse)
+```
 
+
+```
+The code below replaces the long running
 # fit <- lm(rating ~ as.factor(userId), data = movielens)
+Additionally, it computes the movie average ratings
+
+```
+
+```{r,echo=FALSE}
 mu <- mean(edx$rating) 
+
 movie_avgs <- edx %>% 
   group_by(movieId) %>% 
   summarize(b_i = mean(rating - mu))
+```
 
-## Displaying the User Avg Histogram
+```
+Movie Predicated Avg Ratings Histogram
+```
+
+```{r,echo=FALSE}
 movie_avgs %>% qplot(b_i, geom ="histogram", 
                      bins = 10, data = ., color = I("black"))
+```
 
-
-## Creating the Movie Predictions
+```
+Creating the Movie Predictions
+```
+```{r,echo=FALSE}
 predicted_movie_ratings <- mu + validation %>% 
   left_join(movie_avgs, by='movieId') %>%
   .$b_i
+```
 
-## Creating the Movie Density Prediction Histogram
+```
+Movie Density Prediction Histogram
+```
+```{r,echo=FALSE}
 hist(predicted_movie_ratings, freq = F)
+```
 
-## Displaying the Summarized User Predictions Table
+```
+Summarized Movie Predictions Table
+```
+```{r,echo=FALSE}
 density(predicted_movie_ratings)
+```
 
-## Creating the RMSE Predictions for Final Table
+```
+Creating the RMSE Predictions for Final Table
+```
+```{r}
 model_1_rmse <- RMSE(predicted_movie_ratings, validation$rating)
+```
 
-## The Results of combined Movie + User effects Model
+```
+The Results of combined Movie + User effects Model
+```
+```{r}
 rmse_results <- bind_rows(rmse_results,
                           data_frame(method="Movie Effect Model",
                                      RMSE = model_1_rmse ))
+```
 
+
+```
 ## Creating the User Avg 
+```
+```{r}
 user_avgs <- validation %>%
         left_join(movie_avgs, by = "movieId") %>%
         group_by(userId) %>%
         summarize(b_u = mean(rating - mu - b_i))
+```
 
+
+```
 ## Creating the User Avg Predictions
+```
+
+```{r}
 predicted_user_ratings <- validation %>%
         left_join(movie_avgs, by = "movieId") %>%
         left_join(user_avgs, by = "userId") %>%
         mutate(pred = mu + b_i + b_u) %>% 
         .$pred
+```
 
+```
 ## Displaying the User Avg Histogram
+```
+
+```{r}
 user_avgs %>% qplot(b_u, geom ="histogram", 
                     bins = 10, data = ., color = I("blue"))
 
+```
+
+```
 ## Creating the User Density Prediction Histogram
+```
+```{r}
 hist(predicted_user_ratings, freq = F)
+```
 
+```
 ## Displaying the Summarized User Predictions Table
+```
+```{r}
 density(predicted_user_ratings)
+```
 
+```
 ## Creating the RMSE Predictions for Final Table
+```
+```{r}
 model_2_rmse <- RMSE(predicted_user_ratings, validation$rating)
+```
 
+```
 ## The Results of combined Movie + User effects Model
+```
+
+```{r}
 rmse_results <- bind_rows(rmse_results,
                           data_frame(method = "Movie + User effects Model",
                                      RMSE = model_2_rmse))
+```
 
-### Final output of the RMSE results
+```
+## The following code creates a table with the three RMSE
+```
 
+```{r}
 rmse_results %>% knitr::kable()
+
+```
+
+**Conclusion **
+
+```
+Base on the results in the above table, the Movie + User Effects Model 
+yeilds the lowest RMSE of 0.8292477
+
+```
+##The End

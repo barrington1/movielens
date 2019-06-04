@@ -20,9 +20,8 @@ The output of this process will be least "RMSE" ans predicated movie ratings.
 
 **Method/Analysis**
 
-```{r,echo=FALSE}
-library(tidyverse)
-library(dplyr)
+
+```{r, echo=FALSE}
 #data(validation)
 #Create test and validation sets
 ###################################
@@ -33,10 +32,6 @@ library(dplyr)
 
 if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
 if(!require(caret)) install.packages("caret", repos = "http://cran.us.r-project.org")
-
-# MovieLens 10M dataset:
-# https://grouplens.org/datasets/movielens/10m/
-# http://files.grouplens.org/datasets/movielens/ml-10m.zip
 
 dl <- tempfile()
 download.file("http://files.grouplens.org/datasets/movielens/ml-10m.zip", dl)
@@ -81,10 +76,6 @@ rm(dl, ratings, movies, test_index, temp, movielens, removed)
 ```
 ```{r}
 
-validation <- validation %>% 
-    semi_join(edx, by = movieId) %>%
-    semi_join(edx, by = userId)
-
 RMSE <- function(true_ratings, predicted_ratings){
   sqrt(mean((true_ratings - predicted_ratings)^2))
 }
@@ -109,7 +100,7 @@ Additionally, it computes the movie average ratings
 
 ```
 
-```{r}
+```{r,echo=FALSE}
 mu <- mean(edx$rating) 
 
 movie_avgs <- edx %>% 
@@ -117,32 +108,111 @@ movie_avgs <- edx %>%
   summarize(b_i = mean(rating - mu))
 ```
 
-
 ```
-The folowing code block creates the user averages, predicted ratings and
-builds the second model using user input plus the movie rating to improve
-the RMSE.
-
+Movie Predicated Avg Ratings Histogram
 ```
 
+```{r,echo=FALSE}
+movie_avgs %>% qplot(b_i, geom ="histogram", 
+                     bins = 10, data = ., color = I("black"))
+```
+
+```
+Creating the Movie Predictions
+```
+```{r,echo=FALSE}
+predicted_movie_ratings <- mu + validation %>% 
+  left_join(movie_avgs, by='movieId') %>%
+  .$b_i
+```
+
+```
+Movie Density Prediction Histogram
+```
+```{r,echo=FALSE}
+hist(predicted_movie_ratings, freq = F)
+```
+
+```
+Summarized Movie Predictions Table
+```
+```{r,echo=FALSE}
+density(predicted_movie_ratings)
+```
+
+```
+Creating the RMSE Predictions for Final Table
+```
+```{r}
+model_1_rmse <- RMSE(predicted_movie_ratings, validation$rating)
+```
+
+```
+The Results of combined Movie + User effects Model
+```
+```{r}
+rmse_results <- bind_rows(rmse_results,
+                          data_frame(method="Movie Effect Model",
+                                     RMSE = model_1_rmse ))
+```
+
+
+```
+## Creating the User Avg 
+```
 ```{r}
 user_avgs <- validation %>%
         left_join(movie_avgs, by = "movieId") %>%
         group_by(userId) %>%
         summarize(b_u = mean(rating - mu - b_i))
+```
 
-predicted_ratings <- validation %>%
+
+```
+## Creating the User Avg Predictions
+```
+
+```{r}
+predicted_user_ratings <- validation %>%
         left_join(movie_avgs, by = "movieId") %>%
         left_join(user_avgs, by = "userId") %>%
         mutate(pred = mu + b_i + b_u) %>% 
         .$pred
+```
 
-model_2_rmse <- RMSE(predicted_ratings, validation$rating)
+```
+## Displaying the User Avg Histogram
+```
+
+```{r}
+user_avgs %>% qplot(b_u, geom ="histogram", 
+                    bins = 10, data = ., color = I("blue"))
 
 ```
 
 ```
-This code block creates RMSE resuts using Movie + User effects Model
+## Creating the User Density Prediction Histogram
+```
+```{r}
+hist(predicted_user_ratings, freq = F)
+```
+
+```
+## Displaying the Summarized User Predictions Table
+```
+```{r}
+density(predicted_user_ratings)
+```
+
+```
+## Creating the RMSE Predictions for Final Table
+```
+```{r}
+model_2_rmse <- RMSE(predicted_user_ratings, validation$rating)
+```
+
+```
+## The Results of combined Movie + User effects Model
 ```
 
 ```{r}
@@ -152,47 +222,7 @@ rmse_results <- bind_rows(rmse_results,
 ```
 
 ```
-This code block creates Histogram for the Movie effects only
-
-```
-
-```{r}
-movie_avgs %>% qplot(b_i, geom ="histogram", 
-                     bins = 10, data = ., color = I("black"))
-```
-
-```
-This code block creates Histogram for the Movie effect + User effects
-
-```
-
-```{r}
-user_avgs %>% qplot(b_u, geom ="histogram", 
-                     bins = 10, data = ., color = I("blue"))
-```
-
-```
-The following block of code creates the predicted ratings 
-for Movie Effect Model and calculates the RMSE  for Movie effects 
-
-```
-
-
-```{r}
-predicted_ratings <- mu + validation %>% 
-                    left_join(movie_avgs, by='movieId') %>%
-                    .$b_i
-
-model_1_rmse <- RMSE(predicted_ratings, validation$rating)
-rmse_results <- bind_rows(rmse_results,
-                          data_frame(method="Movie Effect Model",
-                                     RMSE = model_1_rmse ))
-
-```
-
-```
-The following code creates a table with the three RMSE
-
+## The following code creates a table with the three RMSE
 ```
 
 ```{r}
