@@ -221,6 +221,7 @@ rmse_results <- bind_rows(rmse_results,
                                      RMSE = model_2_rmse))
 ```
 
+*** Results **
 ```
 ## The following code creates a table with the three RMSE
 ```
